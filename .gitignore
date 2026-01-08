@@ -21,3 +21,5 @@ data/*
 !.yarn/plugins
 !.yarn/releases
 !.yarn/sdks
+outline-local-backups/
+outline_backup.sql

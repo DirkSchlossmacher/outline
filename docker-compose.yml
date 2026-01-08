@@ -1,15 +1,81 @@
 services:
-  redis:
-    image: redis
+  outline:
+    image: outlinewiki/outline:latest
+    env_file: .env
     ports:
-      - "127.0.0.1:6379:6379"
-    user: "redis:redis"
+      - "443:443"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - storage:/var/lib/outline/data
+    restart: unless-stopped
+    healthcheck:
+      disable: true 
   postgres:
     image: postgres
-    ports:
-      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: outline
-    user: "postgres:postgres"
+    volumes:
+      - database:/var/lib/postgresql
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d outline"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  redis:
+    image: redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  backup:
+    image: postgres:latest
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: pass
+    command: >
+      bash -c "mkdir -p /backups &&
+      while true; do
+        filename=/backups/outline_$$(date +%Y-%m-%d_%H-%M).sql.gz;
+        echo \"[Backup] Creating $$filename\";
+        pg_dump -h postgres -U user -d outline | gzip > $$filename;
+        find /backups -type f -mmin +2880 -delete;
+        sleep 3600;
+      done"
+    volumes:
+      - /mnt/synda_backup/outline-db:/backups
+    restart: unless-stopped
+  file-backup:
+    image: alpine:3.20
+    depends_on:
+      - outline
+    volumes:
+      - storage:/source:ro
+      - /mnt/synda_backup/outline-file-archives:/backups
+    command: >
+      sh -c '
+        mkdir -p /backups;
+        while true; do
+          ts=$$(date -u +%Y-%m-%dT%H%M%SZ);
+          archive=/backups/outline-files-$$ts.tar.gz;
+          echo "[FileBackup] Creating $$archive";
+          tar -C /source -czf "$$archive" .;
+          find /backups -type f -mmin +2880 -delete;
+          sleep 3600;
+        done'
+    restart: unless-stopped
+
+volumes:
+  storage:
+  database:

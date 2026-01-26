@@ -87,7 +87,7 @@ export class ProsemirrorHelper {
   }
 
   /**
-   * Converts a plain object into a Prosemirror Node.
+   * Converts a plain object or Markdown string into a Prosemirror Node.
    *
    * @param data The ProsemirrorData object or string to parse.
    * @returns The content as a Prosemirror Node
@@ -548,10 +548,10 @@ export class ProsemirrorHelper {
         }
       }
 
-      // Inject mermaidjs scripts if the document contains mermaid diagrams
+      // Inject mermaidjs scripts if the document contains mermaid diagrams (supports both "mermaid" and "mermaidjs")
       if (options?.includeMermaid) {
         const mermaidElements = dom.window.document.querySelectorAll(
-          `[data-language="mermaidjs"] pre code`
+          `[data-language="mermaid"] pre code, [data-language="mermaidjs"] pre code`
         );
 
         // Unwrap <pre> tags to enable Mermaid script to correctly render inner content

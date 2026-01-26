@@ -95,7 +95,10 @@ export type Props = {
   /** Heading id to scroll to when the editor has loaded */
   scrollTo?: string;
   /** Callback for handling uploaded images, should return the url of uploaded file */
-  uploadFile?: (file: File) => Promise<string>;
+  uploadFile?: (
+    file: File | string,
+    options?: { id?: string; onProgress?: (fractionComplete: number) => void }
+  ) => Promise<string>;
   /** Callback when prosemirror nodes are initialized on document mount. */
   onInit?: () => void;
   /** Callback when prosemirror nodes are destroyed on document unmount. */
@@ -116,10 +119,14 @@ export type Props = {
   onCreateCommentMark?: (commentId: string, userId: string) => void;
   /** Callback when a comment mark is removed */
   onDeleteCommentMark?: (commentId: string) => void;
+  /** Callback when comments sidebar should be opened */
+  onOpenCommentsSidebar?: () => void;
   /** Callback when a file upload begins */
   onFileUploadStart?: () => void;
   /** Callback when a file upload ends */
   onFileUploadStop?: () => void;
+  /** Callback when file upload progress changes */
+  onFileUploadProgress?: (id: string, fractionComplete: number) => void;
   /** Callback when a link is created, should return url to created document */
   onCreateLink?: (params: Properties<Document>) => Promise<string>;
   /** Callback when user clicks on any link in the document */
@@ -165,6 +172,7 @@ export class Editor extends React.PureComponent<
     defaultValue: "",
     dir: "auto",
     placeholder: "Write something nice…",
+    readOnly: false,
     onFileUploadStart: () => {
       // no default behavior
     },
@@ -868,10 +876,11 @@ export class Editor extends React.PureComponent<
           </Flex>
           {!isNull(this.state.activeLightboxImage) && (
             <Lightbox
+              readOnly={readOnly}
               images={this.getLightboxImages()}
               activeImage={this.state.activeLightboxImage}
               onUpdate={this.updateActiveLightboxImage}
-              onClose={() => this.view.focus()}
+              onClose={this.view.focus}
             />
           )}
         </EditorContext.Provider>

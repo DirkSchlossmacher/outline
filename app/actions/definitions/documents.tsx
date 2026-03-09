@@ -41,6 +41,7 @@ import { getEventFiles } from "@shared/utils/files";
 import { Week } from "@shared/utils/time";
 import type UserMembership from "~/models/UserMembership";
 import { client } from "~/utils/ApiClient";
+import { copyPlainText } from "~/utils/clipboard";
 import DocumentDelete from "~/scenes/DocumentDelete";
 import DocumentMove from "~/scenes/DocumentMove";
 import DocumentPermanentDelete from "~/scenes/DocumentPermanentDelete";
@@ -633,8 +634,11 @@ export const copyDocumentAsMarkdown = createAction({
         id: document.id,
         signedUrls: Week.seconds, // 7 days (AWS S3 max for presigned URLs)
       });
-      copy(res.data);
-      toast.success(t("Markdown copied to clipboard"));
+      const copied = await copyPlainText(res.data);
+
+      if (copied) {
+        toast.success(t("Markdown copied to clipboard"));
+      }
     }
   },
 });

@@ -17,8 +17,6 @@ export async function copyPlainText(text: string): Promise<boolean> {
     await navigator.clipboard.writeText(text);
     return true;
   } catch {
-    return copy(text, {
-      format: "text/plain",
-    });
+    return false;
   }
 }
